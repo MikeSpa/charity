@@ -26,9 +26,11 @@
 
 ;;Add new charity
 (define-public (add-charity (name (string-ascii 100)) (address principal))
-    (begin  
+    (let  (
+        (n (var-get n-charity)))
         (map-insert charity-address name address)
         (map-insert charity-balance name u0)
+        (var-set n-charity (+ n u1))
         (ok "Charity added");;TODO insert fail
     )
 )
@@ -36,8 +38,10 @@
 ;;Remove charity 
 ;;TODO empty balance
 (define-public (remove-charity (name (string-ascii 100)))
-    (begin  
+    (let (
+        (n (var-get n-charity)))
         (map-delete charity-address name)
+        (var-set n-charity (- n u1))
         (ok "Charity removed")
     )
 )
@@ -60,6 +64,10 @@
 
 (define-read-only (get-balance-charity (name (string-ascii 100))) 
     (ok (map-get? charity-balance name))
+)
+
+(define-read-only (get-number-charity) 
+    (ok (var-get n-charity) )
 )
 
 (define-public (withdraw (name (string-ascii 100))) 
