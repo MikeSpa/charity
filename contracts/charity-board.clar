@@ -16,7 +16,7 @@
 (define-data-var n-charity uint u0)
 (define-map charity-address { charity-name: (string-utf8 100) } { charity-address: principal })
 (define-data-var balance-total uint u0)
-(define-map charity-balance { charity-name: (string-utf8 100) } { balance: uint })
+(define-map charity-balance (string-utf8 100)  uint );; charity-name -> balance
 
 
 ;; private functions
@@ -28,8 +28,8 @@
 (define-public (add-charity (name (string-utf8 100)) (address principal))
     (begin  
         (map-insert charity-address {charity-name: name} {charity-address: address})
-        (map-insert charity-balance {charity-name: name} {balance: u0})
-        (ok "charity added")
+        (map-insert charity-balance name u0)
+        (ok "Charity added");;TODO insert fail
     )
 )
 
@@ -38,6 +38,17 @@
 (define-public (remove-charity (name (string-utf8 100)))
     (begin  
         (map-delete charity-address {charity-name: name} )
-        (ok "charity removed")
+        (ok "Charity removed")
+    )
+)
+
+;;Donate
+(define-public (donate (charity (string-utf8 100)) (amount uint)) 
+    (let (
+        (old-amount (unwrap-panic (map-get? charity-balance charity)))
+        (new-amount (+ old-amount amount)))
+        (unwrap! (stx-transfer? amount tx-sender (as-contract tx-sender)) (err ERR_STX_TRANSFER))
+        (map-set charity-balance charity new-amount)
+        (ok "Donation succeded!")
     )
 )
