@@ -1,10 +1,11 @@
-
 [project]
 name = "charity"
 authors = []
+description = ""
 telemetry = false
+requirements = []
 analysis = ["check_checker"]
-
-# [contracts.counter]
-# path = "contracts/counter.clar"
-# depends_on = []
+costs_version = 2
+[contracts.charity-board]
+path = "contracts/charity-board.clar"
+depends_on = []
