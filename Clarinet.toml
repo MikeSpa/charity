@@ -1,0 +1,10 @@
+
+[project]
+name = "charity"
+authors = []
+telemetry = false
+analysis = ["check_checker"]
+
+# [contracts.counter]
+# path = "contracts/counter.clar"
+# depends_on = []
