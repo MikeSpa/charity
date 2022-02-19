@@ -11,6 +11,7 @@
 (define-constant contract-owner tx-sender)
 ;; ERROR
 (define-constant err-owner-only (err u100))
+(define-constant err-key (err u101))
 (define-constant err-stx-transfer (err u99))
 
 
@@ -30,13 +31,11 @@
 (define-public (add-charity (name (string-ascii 100)) (address principal))
     (begin 
         (asserts! (is-eq tx-sender contract-owner) err-owner-only)
-        (let  (
-            (n (var-get n-charity)))
-            (map-insert charity-address name address)
-            (map-insert charity-balance name u0)
-            (var-set n-charity (+ n u1))
-            (ok "Charity added");;TODO insert fail
-        )
+        (map-insert charity-address name address)
+        (map-insert charity-balance name u0)
+        (var-set n-charity (+ (var-get n-charity) u1))
+        (ok "Charity added")
+        
     )
 )
 
@@ -46,11 +45,10 @@
     (begin 
         (asserts! (is-eq tx-sender contract-owner) err-owner-only)
         (let (
-            (n (var-get n-charity))
             (balance (unwrap-panic (map-get? charity-balance name))))
             (if (> balance u0) (try! (withdraw name)) (print "TODO"))
             (map-delete charity-address name)
-            (var-set n-charity (- n u1))
+            (var-set n-charity (- (var-get n-charity) u1))
             (ok "Charity removed")
         )
     )
@@ -59,15 +57,16 @@
 ;;Donate
 (define-public (donate (charity (string-ascii 100)) (amount uint)) 
     (let (
-        (old-amount (unwrap-panic (map-get? charity-balance charity)))
-        (new-amount (+ old-amount amount)))
-        (print new-amount)
+        (current-balance (unwrap! (map-get? charity-balance charity) err-key))
+        (new-balance (+ current-balance amount)))
+        ;; (print new-balance)
         (unwrap! (stx-transfer? amount tx-sender (as-contract tx-sender)) err-stx-transfer)
         (var-set balance-total (+ (var-get balance-total) amount))
-        (map-set charity-balance charity new-amount)
+        (map-set charity-balance charity new-balance)
         (ok "Donation successful! Thank you")
     )
 )
+
 (define-read-only (get-balance-total) 
     (ok (var-get balance-total))
 )
@@ -82,8 +81,8 @@
 
 (define-public (withdraw (name (string-ascii 100))) 
     (let (
-        (balance-charity (unwrap-panic (map-get? charity-balance name)))
-        (address-charity (unwrap-panic (map-get? charity-address name))))
+        (balance-charity (unwrap! (map-get? charity-balance name) err-key))
+        (address-charity (unwrap! (map-get? charity-address name) err-key)))
         (print address-charity)
         (print balance-charity)
         (unwrap! (as-contract (stx-transfer? balance-charity tx-sender address-charity)) err-stx-transfer)
@@ -91,5 +90,4 @@
         (map-set charity-balance name u0)
         (ok "Withdraw successful")
     )
-
 )
