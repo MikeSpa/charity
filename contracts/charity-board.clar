@@ -20,7 +20,7 @@
 (define-data-var balance-total uint u0)
 (define-map charity-balance (string-ascii 100)  uint );; charity-name -> balance
 
-
+;;(asserts! (is-some (index-of (var-get members) tx-sender)) err-not-a-member)
 ;; private functions
 ;;
 
@@ -46,13 +46,14 @@
     (begin 
         (asserts! (is-eq tx-sender contract-owner) err-owner-only)
         (let (
-            (n (var-get n-charity)))
+            (n (var-get n-charity))
+            (balance (unwrap-panic (map-get? charity-balance name))))
+            (if (> balance u0) (try! (withdraw name)) (print "TODO"))
             (map-delete charity-address name)
             (var-set n-charity (- n u1))
             (ok "Charity removed")
         )
     )
-    
 )
 
 ;;Donate
