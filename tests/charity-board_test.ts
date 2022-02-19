@@ -13,7 +13,7 @@ Clarinet.test({
 
         let block = chain.mineBlock([
             Tx.contractCall("charity-board", "add-charity", [types.ascii("dog_shelter"), types.principal(wallet1.address)], deployer.address),
-            Tx.contractCall("charity-board", "add-charity", [types.ascii("cat_shelter"), types.principal(wallet2.address)], wallet2.address),
+            Tx.contractCall("charity-board", "add-charity", [types.ascii("cat_shelter"), types.principal(wallet2.address)], deployer.address),
         ]);
 
         assertEquals(block.receipts.length, 2);
@@ -28,7 +28,7 @@ Clarinet.test({
         numberCharity.result.expectOk().expectUint(2);
 
         block = chain.mineBlock([
-            Tx.contractCall("charity-board", "remove-charity", [types.ascii("cat_shelter")], wallet2.address),
+            Tx.contractCall("charity-board", "remove-charity", [types.ascii("cat_shelter")], deployer.address),
         ]);
         assertEquals(block.receipts.length, 1);
         assertEquals(block.height, 3);
@@ -56,7 +56,7 @@ Clarinet.test({
 
         let block = chain.mineBlock([
             Tx.contractCall("charity-board", "add-charity", [types.ascii("dog_shelter"), types.principal(wallet1.address)], deployer.address),
-            Tx.contractCall("charity-board", "add-charity", [types.ascii("cat_shelter"), types.principal(wallet2.address)], wallet2.address),
+            Tx.contractCall("charity-board", "add-charity", [types.ascii("cat_shelter"), types.principal(wallet2.address)], deployer.address),
             Tx.contractCall("charity-board", "donate", [types.ascii("dog_shelter"), types.uint(300)], wallet3.address),
             Tx.contractCall("charity-board", "donate", [types.ascii("dog_shelter"), types.uint(100)], wallet2.address),
             Tx.contractCall("charity-board", "donate", [types.ascii("cat_shelter"), types.uint(1000)], wallet3.address),
@@ -109,7 +109,7 @@ Clarinet.test({
 
         let block = chain.mineBlock([
             Tx.contractCall("charity-board", "add-charity", [types.ascii("dog_shelter"), types.principal(wallet1.address)], deployer.address),
-            Tx.contractCall("charity-board", "add-charity", [types.ascii("cat_shelter"), types.principal(wallet2.address)], wallet2.address),
+            Tx.contractCall("charity-board", "add-charity", [types.ascii("cat_shelter"), types.principal(wallet2.address)], deployer.address),
             Tx.contractCall("charity-board", "donate", [types.ascii("dog_shelter"), types.uint(300)], wallet3.address),
             Tx.contractCall("charity-board", "donate", [types.ascii("dog_shelter"), types.uint(100)], wallet2.address),
             Tx.contractCall("charity-board", "donate", [types.ascii("cat_shelter"), types.uint(1000)], wallet3.address),
