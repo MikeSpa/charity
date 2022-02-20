@@ -38,6 +38,8 @@ Clarinet.test({
 
         numberCharity = chain.callReadOnlyFn('charity-board', 'get-number-charity', [], deployer.address);
         numberCharity.result.expectOk().expectUint(1);
+        let balance_cat_shelter = chain.callReadOnlyFn('charity-board', 'get-balance-charity', [types.ascii("cat_shelter")], deployer.address);
+        balance_cat_shelter.result.expectOk().expectNone()
 
         // Test only-owner modifier
         block = chain.mineBlock([
@@ -120,14 +122,12 @@ Clarinet.test({
         block = chain.mineBlock([
             Tx.contractCall("charity-board", "donate", [types.ascii("rat_shelter"), types.uint(300)], wallet3.address),
             Tx.contractCall("charity-board", "donate", [types.ascii("dog_shelter"), types.uint(100000000000001)], wallet2.address),
-            Tx.contractCall("charity-board", "donate", [types.ascii("cat_shelter"), types.int(-10)], wallet3.address),
         ]);
-        assertEquals(block.receipts.length, 3);
+        assertEquals(block.receipts.length, 2);
         assertEquals(block.height, 3);
 
         block.receipts[0].result.expectErr().expectUint(err_key_invalid)
         block.receipts[1].result.expectErr().expectUint(err_stx_transfer)
-        block.receipts[2].result.expectOk().expectAscii("Donation successful! Thank you");
 
 
     },
@@ -197,6 +197,57 @@ Clarinet.test({
         assetsMaps = chain.getAssetsMaps();
         const balance1_end = assetsMaps.assets["STX"][wallet1.address];
         assertEquals(balance1_end, balance1_after + 400);
+
+        //test fail charity dont exist
+        block = chain.mineBlock([
+            Tx.contractCall("charity-board", "withdraw", [types.ascii("rat_shelter")], wallet1.address),
+        ]);
+        assertEquals(block.receipts.length, 1);
+        assertEquals(block.height, 4);
+        block.receipts[0].result.expectErr().expectUint(err_key_invalid)
+
+
+    },
+});
+
+Clarinet.test({
+    name: "Ensure that removing charity with funds will withdraw first",
+    async fn(chain: Chain, accounts: Map<string, Account>) {
+
+        let deployer = accounts.get('deployer')!;
+        let wallet1 = accounts.get("wallet_1")!;
+        let wallet2 = accounts.get("wallet_2")!;
+
+        let assetsMaps = chain.getAssetsMaps();
+        const deployer_before = assetsMaps.assets["STX"][deployer.address];
+        const balance1_before = assetsMaps.assets["STX"][wallet1.address];
+        const balance2_before = assetsMaps.assets["STX"][wallet2.address];
+
+        //test remove-charity
+        let block = chain.mineBlock([
+            Tx.contractCall("charity-board", "add-charity", [types.ascii("dog_shelter"), types.principal(wallet1.address)], deployer.address),
+            Tx.contractCall("charity-board", "donate", [types.ascii("dog_shelter"), types.uint(1000)], wallet2.address),
+            Tx.contractCall("charity-board", "remove-charity", [types.ascii("dog_shelter")], deployer.address),
+        ]);
+        assertEquals(block.receipts.length, 3);
+        assertEquals(block.height, 2);
+        block.receipts[0].result.expectOk().expectAscii("Charity added");
+        block.receipts[1].result.expectOk().expectAscii("Donation successful! Thank you");
+        block.receipts[2].result.expectOk().expectAscii("Charity removed");
+
+        let balance = chain.callReadOnlyFn('charity-board', 'get-balance-total', [], deployer.address);
+        balance.result.expectOk().expectUint(0);
+
+        let balance_dog_shelter = chain.callReadOnlyFn('charity-board', 'get-balance-charity', [types.ascii("dog_shelter")], deployer.address);
+        balance_dog_shelter.result.expectOk().expectNone()
+
+        assetsMaps = chain.getAssetsMaps();
+        const deployer_after = assetsMaps.assets["STX"][deployer.address];
+        const balance1_after = assetsMaps.assets["STX"][wallet1.address];
+        const balance2_after = assetsMaps.assets["STX"][wallet2.address];
+        assertEquals(deployer_after, deployer_before);
+        assertEquals(balance1_after, balance1_before + 1000);
+        assertEquals(balance2_after, balance2_before - 1000);
 
     },
 });
