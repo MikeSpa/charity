@@ -6,6 +6,7 @@ An app on STX that allow charity to accept donation in crypto. A charity simply 
 # TODO
 - [x] add money transfer
 - [ ] add error and check
-- [ ] tests
+- [x] basic testing
+- [ ] more test, errors
 - [ ] add donor name list or smth
 - [ ] add donation spread over all charity

@@ -40,12 +40,11 @@
 )
 
 ;;Remove charity 
-;;TODO empty balance
 (define-public (remove-charity (name (string-ascii 100)))
     (begin 
         (asserts! (is-eq tx-sender contract-owner) err-owner-only)
         (let (
-            (balance (unwrap-panic (map-get? charity-balance name))))
+            (balance (unwrap! (map-get? charity-balance name) err-key-invalid)))
             (if (> balance u0) (try! (withdraw name)) (print "TODO"))
             (map-delete charity-address name)
             (map-delete charity-balance name)
@@ -60,7 +59,6 @@
     (let (
         (current-balance (unwrap! (map-get? charity-balance charity) err-key-invalid))
         (new-balance (+ current-balance amount)))
-        ;; (print new-balance)
         (unwrap! (stx-transfer? amount tx-sender (as-contract tx-sender)) err-stx-transfer)
         (var-set balance-total (+ (var-get balance-total) amount))
         (map-set charity-balance charity new-balance)

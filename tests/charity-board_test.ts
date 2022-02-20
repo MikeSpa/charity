@@ -2,6 +2,11 @@
 import { Clarinet, Tx, Chain, Account, types } from 'https://deno.land/x/clarinet@v0.14.0/index.ts';
 import { assertEquals } from 'https://deno.land/std@0.90.0/testing/asserts.ts';
 
+const err_stx_transfer = 99;
+const err_owner_only = 100;
+const err_key_invalid = 101;
+const err_key_already_used = 102;
+
 Clarinet.test({
     name: "Ensure that adding/removing charity works",
     async fn(chain: Chain, accounts: Map<string, Account>) {
@@ -10,7 +15,7 @@ Clarinet.test({
         let wallet1 = accounts.get("wallet_1")!;
         let wallet2 = accounts.get("wallet_2")!;
 
-
+        //test add charity
         let block = chain.mineBlock([
             Tx.contractCall("charity-board", "add-charity", [types.ascii("dog_shelter"), types.principal(wallet1.address)], deployer.address),
             Tx.contractCall("charity-board", "add-charity", [types.ascii("cat_shelter"), types.principal(wallet2.address)], deployer.address),
@@ -21,9 +26,6 @@ Clarinet.test({
         block.receipts[0].result.expectOk().expectAscii("Charity added");
         block.receipts[1].result.expectOk().expectAscii("Charity added");
 
-        let balance = chain.callReadOnlyFn('charity-board', 'get-balance-total', [], deployer.address);
-        balance.result.expectOk().expectUint(0);
-
         let numberCharity = chain.callReadOnlyFn('charity-board', 'get-number-charity', [], deployer.address);
         numberCharity.result.expectOk().expectUint(2);
 
@@ -33,6 +35,34 @@ Clarinet.test({
         assertEquals(block.receipts.length, 1);
         assertEquals(block.height, 3);
         block.receipts[0].result.expectOk().expectAscii("Charity removed");
+
+        numberCharity = chain.callReadOnlyFn('charity-board', 'get-number-charity', [], deployer.address);
+        numberCharity.result.expectOk().expectUint(1);
+
+        // Test only-owner modifier
+        block = chain.mineBlock([
+            Tx.contractCall("charity-board", "add-charity", [types.ascii("cat_shelter"), types.principal(wallet2.address)], wallet1.address),
+            Tx.contractCall("charity-board", "add-charity", [types.ascii("cat_shelter2"), types.principal(wallet2.address)], wallet1.address),
+            Tx.contractCall("charity-board", "remove-charity", [types.ascii("cat_shelter")], wallet1.address),
+        ]);
+        assertEquals(block.receipts.length, 3);
+        assertEquals(block.height, 4);
+        block.receipts[0].result.expectErr().expectUint(err_owner_only)
+        block.receipts[2].result.expectErr().expectUint(err_owner_only)
+
+        numberCharity = chain.callReadOnlyFn('charity-board', 'get-number-charity', [], deployer.address);
+        numberCharity.result.expectOk().expectUint(1);
+
+        // Test add same charity twice
+        block = chain.mineBlock([
+            Tx.contractCall("charity-board", "add-charity", [types.ascii("dog_shelter"), types.principal(deployer.address)], deployer.address),
+            Tx.contractCall("charity-board", "add-charity", [types.ascii("dog_shelter"), types.principal(deployer.address)], deployer.address),
+            Tx.contractCall("charity-board", "remove-charity", [types.ascii("rat_shelter")], deployer.address),
+        ]);
+        assertEquals(block.receipts.length, 3);
+        assertEquals(block.height, 5);
+        block.receipts[0].result.expectErr().expectUint(err_key_already_used)
+        block.receipts[2].result.expectErr().expectUint(err_key_invalid)
 
         numberCharity = chain.callReadOnlyFn('charity-board', 'get-number-charity', [], deployer.address);
         numberCharity.result.expectOk().expectUint(1);
