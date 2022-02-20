@@ -29,6 +29,7 @@
 ;; PUBLIC FUNCTION
 
 ;;Add new charity
+;; #[allow(unchecked_data)]
 (define-public (add-charity (name (string-ascii 100)) (address principal))
     (begin 
         (asserts! (is-eq tx-sender contract-owner) err-owner-only)
@@ -66,18 +67,7 @@
     )
 )
 
-(define-read-only (get-balance-total) 
-    (ok (var-get balance-total))
-)
-
-(define-read-only (get-balance-charity (name (string-ascii 100))) 
-    (ok (map-get? charity-balance name))
-)
-
-(define-read-only (get-number-charity) 
-    (ok (var-get n-charity) )
-)
-
+;;Withdraw
 (define-public (withdraw (name (string-ascii 100))) 
     (let (
         (balance-charity (unwrap! (map-get? charity-balance name) err-key-invalid))
@@ -89,4 +79,16 @@
         (map-set charity-balance name u0)
         (ok "Withdraw successful")
     )
+)
+
+(define-read-only (get-balance-total) 
+    (ok (var-get balance-total))
+)
+
+(define-read-only (get-balance-charity (name (string-ascii 100))) 
+    (ok (map-get? charity-balance name))
+)
+
+(define-read-only (get-number-charity) 
+    (ok (var-get n-charity) )
 )
