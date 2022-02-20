@@ -10,9 +10,10 @@
 ;; CONST
 (define-constant contract-owner tx-sender)
 ;; ERROR
-(define-constant err-owner-only (err u100))
-(define-constant err-key (err u101))
 (define-constant err-stx-transfer (err u99))
+(define-constant err-owner-only (err u100))
+(define-constant err-key-invalid (err u101))
+(define-constant err-key-already-used (err u102))
 
 
 ;; DATA
@@ -31,11 +32,10 @@
 (define-public (add-charity (name (string-ascii 100)) (address principal))
     (begin 
         (asserts! (is-eq tx-sender contract-owner) err-owner-only)
-        (map-insert charity-address name address)
-        (map-insert charity-balance name u0)
+        (asserts! (map-insert charity-address name address) err-key-already-used)
+        (asserts! (map-insert charity-balance name u0) err-key-already-used)
         (var-set n-charity (+ (var-get n-charity) u1))
         (ok "Charity added")
-        
     )
 )
 
@@ -48,6 +48,7 @@
             (balance (unwrap-panic (map-get? charity-balance name))))
             (if (> balance u0) (try! (withdraw name)) (print "TODO"))
             (map-delete charity-address name)
+            (map-delete charity-balance name)
             (var-set n-charity (- (var-get n-charity) u1))
             (ok "Charity removed")
         )
@@ -57,7 +58,7 @@
 ;;Donate
 (define-public (donate (charity (string-ascii 100)) (amount uint)) 
     (let (
-        (current-balance (unwrap! (map-get? charity-balance charity) err-key))
+        (current-balance (unwrap! (map-get? charity-balance charity) err-key-invalid))
         (new-balance (+ current-balance amount)))
         ;; (print new-balance)
         (unwrap! (stx-transfer? amount tx-sender (as-contract tx-sender)) err-stx-transfer)
@@ -81,8 +82,8 @@
 
 (define-public (withdraw (name (string-ascii 100))) 
     (let (
-        (balance-charity (unwrap! (map-get? charity-balance name) err-key))
-        (address-charity (unwrap! (map-get? charity-address name) err-key)))
+        (balance-charity (unwrap! (map-get? charity-balance name) err-key-invalid))
+        (address-charity (unwrap! (map-get? charity-address name) err-key-invalid)))
         (print address-charity)
         (print balance-charity)
         (unwrap! (as-contract (stx-transfer? balance-charity tx-sender address-charity)) err-stx-transfer)
