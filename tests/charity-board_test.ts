@@ -20,7 +20,6 @@ Clarinet.test({
             Tx.contractCall("charity-board", "add-charity", [types.ascii("dog_shelter"), types.principal(wallet1.address)], deployer.address),
             Tx.contractCall("charity-board", "add-charity", [types.ascii("cat_shelter"), types.principal(wallet2.address)], deployer.address),
         ]);
-
         assertEquals(block.receipts.length, 2);
         assertEquals(block.height, 2);
         block.receipts[0].result.expectOk().expectAscii("Charity added");
@@ -29,6 +28,7 @@ Clarinet.test({
         let numberCharity = chain.callReadOnlyFn('charity-board', 'get-number-charity', [], deployer.address);
         numberCharity.result.expectOk().expectUint(2);
 
+        //test remove charity
         block = chain.mineBlock([
             Tx.contractCall("charity-board", "remove-charity", [types.ascii("cat_shelter")], deployer.address),
         ]);
@@ -53,7 +53,7 @@ Clarinet.test({
         numberCharity = chain.callReadOnlyFn('charity-board', 'get-number-charity', [], deployer.address);
         numberCharity.result.expectOk().expectUint(1);
 
-        // Test add same charity twice
+        // Test add same charity twice, remove non existant charity
         block = chain.mineBlock([
             Tx.contractCall("charity-board", "add-charity", [types.ascii("dog_shelter"), types.principal(deployer.address)], deployer.address),
             Tx.contractCall("charity-board", "add-charity", [types.ascii("dog_shelter"), types.principal(deployer.address)], deployer.address),
@@ -84,6 +84,7 @@ Clarinet.test({
         const balance2_before = assetsMaps.assets["STX"][wallet2.address];
         const balance3_before = assetsMaps.assets["STX"][wallet3.address];
 
+        //test donate function
         let block = chain.mineBlock([
             Tx.contractCall("charity-board", "add-charity", [types.ascii("dog_shelter"), types.principal(wallet1.address)], deployer.address),
             Tx.contractCall("charity-board", "add-charity", [types.ascii("cat_shelter"), types.principal(wallet2.address)], deployer.address),
@@ -91,8 +92,6 @@ Clarinet.test({
             Tx.contractCall("charity-board", "donate", [types.ascii("dog_shelter"), types.uint(100)], wallet2.address),
             Tx.contractCall("charity-board", "donate", [types.ascii("cat_shelter"), types.uint(1000)], wallet3.address),
         ]);
-
-
         assertEquals(block.receipts.length, 5);
         assertEquals(block.height, 2);
         block.receipts[2].result.expectOk().expectAscii("Donation successful! Thank you");
@@ -116,6 +115,19 @@ Clarinet.test({
         assertEquals(balance1_after, balance1_before);
         assertEquals(balance2_after, balance2_before - 100);
         assertEquals(balance3_after, balance3_before - 1300);
+
+        //test donate fail (non existant charity or stx-transfer? fail)
+        block = chain.mineBlock([
+            Tx.contractCall("charity-board", "donate", [types.ascii("rat_shelter"), types.uint(300)], wallet3.address),
+            Tx.contractCall("charity-board", "donate", [types.ascii("dog_shelter"), types.uint(100000000000001)], wallet2.address),
+            Tx.contractCall("charity-board", "donate", [types.ascii("cat_shelter"), types.int(-10)], wallet3.address),
+        ]);
+        assertEquals(block.receipts.length, 3);
+        assertEquals(block.height, 3);
+
+        block.receipts[0].result.expectErr().expectUint(err_key_invalid)
+        block.receipts[1].result.expectErr().expectUint(err_stx_transfer)
+        block.receipts[2].result.expectOk().expectAscii("Donation successful! Thank you");
 
 
     },
