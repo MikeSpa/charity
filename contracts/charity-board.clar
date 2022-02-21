@@ -21,6 +21,7 @@
 (define-map charity-address (string-ascii 100) principal);; charity-name -> address
 (define-data-var balance-total uint u0)
 (define-map charity-balance (string-ascii 100)  uint );; charity-name -> balance
+(define-map donors principal uint)
 
 ;;(asserts! (is-some (index-of (var-get members) tx-sender)) err-not-a-member)
 ;; private functions
@@ -58,14 +59,20 @@
 ;;Donate
 (define-public (donate (charity (string-ascii 100)) (amount uint)) 
     (let (
-        (current-balance (unwrap! (map-get? charity-balance charity) err-key-invalid))
-        (new-balance (+ current-balance amount)))
+            (current-balance (unwrap! (map-get? charity-balance charity) err-key-invalid))
+            (new-balance (+ current-balance amount))
+            (opt-cur-don-amt (map-get? donors tx-sender))
+            (current-donation-amount (if (is-some opt-cur-don-amt) (unwrap! opt-cur-don-amt (err u1)) u0));;there must be a better way to do that shit
+            )
         (unwrap! (stx-transfer? amount tx-sender (as-contract tx-sender)) err-stx-transfer)
         (var-set balance-total (+ (var-get balance-total) amount))
         (map-set charity-balance charity new-balance)
+        (map-set donors tx-sender (+ current-donation-amount amount))
         (ok "Donation successful! Thank you")
     )
 )
+
+;; (if (map-get? donors tx-sender) (+ amount) amount)
 
 ;;Withdraw
 (define-public (withdraw (name (string-ascii 100))) 
