@@ -251,3 +251,46 @@ Clarinet.test({
 
     },
 });
+
+Clarinet.test({
+    name: "Ensure donors map works",
+    async fn(chain: Chain, accounts: Map<string, Account>) {
+
+        let deployer = accounts.get('deployer')!;
+        let wallet1 = accounts.get("wallet_1")!;
+        let wallet2 = accounts.get("wallet_2")!;
+
+        let assetsMaps = chain.getAssetsMaps();
+        const deployer_before = assetsMaps.assets["STX"][deployer.address];
+        const balance1_before = assetsMaps.assets["STX"][wallet1.address];
+        const balance2_before = assetsMaps.assets["STX"][wallet2.address];
+
+        //test remove-charity
+        let block = chain.mineBlock([
+            Tx.contractCall("charity-board", "add-charity", [types.ascii("dog_shelter"), types.principal(wallet1.address)], deployer.address),
+            Tx.contractCall("charity-board", "donate", [types.ascii("dog_shelter"), types.uint(1000)], wallet2.address),
+        ]);
+        assertEquals(block.receipts.length, 2);
+        assertEquals(block.height, 2);
+        block.receipts[0].result.expectOk().expectAscii("Charity added");
+        block.receipts[1].result.expectOk().expectAscii("Donation successful! Thank you");
+
+        let amt1 = chain.callReadOnlyFn('charity-board', 'get-donor-amount', [types.principal(wallet1.address)], deployer.address);
+        amt1.result.expectErr().expectUint(err_key_invalid);
+        let amt2 = chain.callReadOnlyFn('charity-board', 'get-donor-amount', [types.principal(wallet2.address)], deployer.address);
+        amt2.result.expectOk().expectUint(1000);
+
+        block = chain.mineBlock([
+            Tx.contractCall("charity-board", "donate", [types.ascii("dog_shelter"), types.uint(1000)], wallet2.address),
+        ]);
+        assertEquals(block.receipts.length, 1);
+        assertEquals(block.height, 3);
+        block.receipts[0].result.expectOk().expectAscii("Donation successful! Thank you");
+
+        amt1 = chain.callReadOnlyFn('charity-board', 'get-donor-amount', [types.principal(wallet1.address)], deployer.address);
+        amt1.result.expectErr().expectUint(err_key_invalid);
+        amt2 = chain.callReadOnlyFn('charity-board', 'get-donor-amount', [types.principal(wallet2.address)], deployer.address);
+        amt2.result.expectOk().expectUint(2000);
+
+    },
+});

@@ -62,11 +62,13 @@
             (current-balance (unwrap! (map-get? charity-balance charity) err-key-invalid))
             (new-balance (+ current-balance amount))
             (opt-cur-don-amt (map-get? donors tx-sender))
-            (current-donation-amount (if (is-some opt-cur-don-amt) (unwrap! opt-cur-don-amt (err u1)) u0));;there must be a better way to do that shit
+            ;; (current-donation-amount (if (is-some opt-cur-don-amt) (unwrap! opt-cur-don-amt (err u1)) u0));;there must be a better way to do that shit
+            (current-donation-amount (match opt-cur-don-amt value (unwrap! opt-cur-don-amt (err u1)) u0));;somewhat better but still ugly
             )
         (unwrap! (stx-transfer? amount tx-sender (as-contract tx-sender)) err-stx-transfer)
         (var-set balance-total (+ (var-get balance-total) amount))
         (map-set charity-balance charity new-balance)
+        ;; (print(+ current-donation-amount amount))
         (map-set donors tx-sender (+ current-donation-amount amount))
         (ok "Donation successful! Thank you")
     )
@@ -98,4 +100,8 @@
 
 (define-read-only (get-number-charity) 
     (ok (var-get n-charity) )
+)
+
+(define-read-only (get-donor-amount (donor-name principal))
+    (ok (unwrap! (map-get? donors donor-name) err-key-invalid))
 )
