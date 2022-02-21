@@ -63,7 +63,9 @@
             (new-balance (+ current-balance amount))
             (opt-cur-don-amt (map-get? donors tx-sender))
             ;; (current-donation-amount (if (is-some opt-cur-don-amt) (unwrap! opt-cur-don-amt (err u1)) u0));;there must be a better way to do that shit
-            (current-donation-amount (match opt-cur-don-amt value (unwrap! opt-cur-don-amt (err u1)) u0));;somewhat better but still ugly
+            ;; (current-donation-amount (match opt-cur-don-amt value (unwrap! opt-cur-don-amt (err u1)) u0));;somewhat better but still ugly
+            (current-donation-amount (match opt-cur-don-amt value (unwrap-panic opt-cur-don-amt) u0));;somewhat better but still ugly
+
             )
         (unwrap! (stx-transfer? amount tx-sender (as-contract tx-sender)) err-stx-transfer)
         (var-set balance-total (+ (var-get balance-total) amount))
@@ -73,8 +75,6 @@
         (ok "Donation successful! Thank you")
     )
 )
-
-;; (if (map-get? donors tx-sender) (+ amount) amount)
 
 ;;Withdraw
 (define-public (withdraw (name (string-ascii 100))) 
