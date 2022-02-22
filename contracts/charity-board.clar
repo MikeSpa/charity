@@ -23,7 +23,6 @@
 (define-map charity-balance (string-ascii 100)  uint );; charity-name -> balance
 (define-map donors principal uint)
 
-;;(asserts! (is-some (index-of (var-get members) tx-sender)) err-not-a-member)
 ;; private functions
 ;;
 
@@ -61,10 +60,11 @@
     (let (
             (current-balance (unwrap! (map-get? charity-balance charity) err-key-invalid))
             (new-balance (+ current-balance amount))
-            (opt-cur-don-amt (map-get? donors tx-sender))
+            ;; (opt-cur-don-amt )
             ;; (current-donation-amount (if (is-some opt-cur-don-amt) (unwrap! opt-cur-don-amt (err u1)) u0));;there must be a better way to do that shit
             ;; (current-donation-amount (match opt-cur-don-amt value (unwrap! opt-cur-don-amt (err u1)) u0));;somewhat better but still ugly
-            (current-donation-amount (match opt-cur-don-amt value (unwrap-panic opt-cur-don-amt) u0));;somewhat better but still ugly
+            ;; (current-donation-amount (match opt-cur-don-amt value (unwrap-panic opt-cur-don-amt) u0));;somewhat better but still ugly
+            (current-donation-amount (default-to u0 (map-get? donors tx-sender)));; nice
 
             )
         (unwrap! (stx-transfer? amount tx-sender (as-contract tx-sender)) err-stx-transfer)
