@@ -9,4 +9,9 @@ jobs:
       - name: "Execute unit tests"
         uses: docker://hirosystems/clarinet:latest
         with:
-          args: test --coverage --manifest-path=./Clarinet.toml
+          args: test --coverage --manifest-path=./Clarinet.tom
+      - name: "Export code coverage"
+        uses: codecov/codecov-action@v1
+        with:
+          files: ./coverage.lcov
+          verbose: truel
