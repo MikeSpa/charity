@@ -2,4 +2,9 @@
 settings/Mainnet.toml
 settings/Testnet.toml
 history.txt
+
+#coverage
 coverage.lcov
+*png
+*html
+*css
