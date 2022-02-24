@@ -17,9 +17,11 @@
 
 
 ;; DATA
+(define-data-var fee uint u0)
 (define-data-var n-charity uint u0)
 (define-map charity-address (string-ascii 100) principal);; charity-name -> address
 (define-data-var balance-total uint u0)
+(define-data-var balance-contract-fee uint u0)
 (define-map charity-balance (string-ascii 100)  uint );; charity-name -> balance
 (define-map donors principal uint)
 
@@ -59,12 +61,16 @@
 ;; #[allow(unchecked_data)]
 (define-public (donate (charity (string-ascii 100)) (amount uint)) 
     (let (
+            (the-fee (var-get fee))
+            (amt-minus-fee (- amount the-fee))
             (current-balance (unwrap! (map-get? charity-balance charity) err-key-invalid))
-            (new-balance (+ current-balance amount))
+            (new-balance (+ current-balance amt-minus-fee))
             (current-donation-amount (default-to u0 (map-get? donors tx-sender)))
         )
+        (asserts! (> amount the-fee) (err u1))
         (unwrap! (stx-transfer? amount tx-sender (as-contract tx-sender)) err-stx-transfer)
         (var-set balance-total (+ (var-get balance-total) amount))
+        (var-set balance-contract-fee (+ (var-get balance-contract-fee) the-fee))
         (map-set charity-balance charity new-balance)
         ;; (print(+ current-donation-amount amount))
         (map-set donors tx-sender (+ current-donation-amount amount))
@@ -87,6 +93,12 @@
     )
 )
 
+(define-public (change-fee (new-fee uint)) 
+    (begin (var-set fee new-fee) (ok "Fee changed"))
+    
+)
+
+
 (define-read-only (get-balance-total) 
     (ok (var-get balance-total))
 )
@@ -101,4 +113,8 @@
 
 (define-read-only (get-donor-amount (donor-name principal))
     (ok (unwrap! (map-get? donors donor-name) err-key-invalid))
+)
+
+(define-read-only (get-fee) 
+    (ok (var-get fee))
 )
